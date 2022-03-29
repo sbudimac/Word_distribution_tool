@@ -1,8 +1,12 @@
 package RAF.KiDSDomaci1.view;
 
-import java.io.File;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Optional;
+import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 
 import RAF.KiDSDomaci1.app.Config;
 import RAF.KiDSDomaci1.model.Cruncher;
@@ -41,12 +45,15 @@ public class MainView {
 
 	private Button addCruncher;
 
-	public void initMainView(BorderPane borderPane, Stage stage) {
+	public static ExecutorService inputThreadPool;
+	public static ForkJoinPool cruncherThreadPool;
+	public static ExecutorService outputThreadPool;
 
+	public void initMainView(BorderPane borderPane, Stage stage) {
 		this.stage = stage;
 
-		fileInputViews = new ArrayList<FileInputView>();
-		availableCrunchers = new ArrayList<Cruncher>();
+		fileInputViews = new ArrayList<>();
+		availableCrunchers = new ArrayList<>();
 
 		left = new HBox();
 
@@ -67,7 +74,7 @@ public class MainView {
 		fileInput.getChildren().add(new Text("File inputs:"));
 		VBox.setMargin(fileInput.getChildren().get(0), new Insets(0, 0, 10, 0));
 
-		disks = new ComboBox<Disk>();
+		disks = new ComboBox<>();
 		disks.getSelectionModel().selectedItemProperty().addListener(e -> updateEnableAddFileInput());
 		disks.setMinWidth(120);
 		disks.setMaxWidth(120);
@@ -108,6 +115,7 @@ public class MainView {
 				disks.getItems().add(new Disk(file));
 			}
 			if (disksArray.length > 0) {
+				inputThreadPool = Executors.newFixedThreadPool(disksArray.length);
 				disks.getSelectionModel().select(0);
 			}
 		} catch (Exception e) {
@@ -130,9 +138,11 @@ public class MainView {
 	}
 
 	private void initCruncher() {
+		cruncherThreadPool = ForkJoinPool.commonPool();
+
 		cruncher = new VBox();
 
-		Text text = new Text("Crunchers");
+		Text text = new Text("Crunchers:");
 		cruncher.getChildren().add(text);
 		VBox.setMargin(text, new Insets(0, 0, 5, 0));
 
@@ -166,11 +176,13 @@ public class MainView {
 	}
 
 	private void initRight(BorderPane borderPane) {
+		outputThreadPool = Executors.newCachedThreadPool();
+
 		right = new VBox();
 		right.setPadding(new Insets(10));
 		right.setMaxWidth(200);
 
-		results = new ListView<String>();
+		results = new ListView<>();
 		right.getChildren().add(results);
 		VBox.setMargin(results, new Insets(0, 0, 10, 0));
 		results.getSelectionModel().selectedItemProperty().addListener(e -> updateResultButtons());
