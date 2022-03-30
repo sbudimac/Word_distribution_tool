@@ -5,7 +5,7 @@ import java.util.ArrayList;
 
 import RAF.KiDSDomaci1.model.Cruncher;
 import RAF.KiDSDomaci1.model.Directory;
-import RAF.KiDSDomaci1.model.FileInput;
+import RAF.KiDSDomaci1.input.FileInput;
 import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
@@ -36,6 +36,9 @@ public class FileInputView {
 	public FileInputView(FileInput fileInput, MainView mainView) {
 		this.mainView = mainView;
 		this.fileInput = fileInput;
+
+		Thread fileInputThread = new Thread(fileInput);
+		fileInputThread.start();
 
 		main = new VBox();
 		main.getChildren().add(new Text("File input " + fileInput.toString() + ": " + fileInput.getDisk().toString()));
@@ -81,7 +84,7 @@ public class FileInputView {
 		main.getChildren().add(dirTitle);
 		VBox.setMargin(dirTitle, new Insets(10, 0, 0, 0));
 
-		directories = new ListView<Directory>();
+		directories = new ListView<>();
 		directories.setMinWidth(width);
 		directories.setMaxWidth(width);
 		directories.setMinHeight(150);
@@ -194,15 +197,31 @@ public class FileInputView {
 			}
 			Directory directory = new Directory(fileDirectory);
 			directories.getItems().add(directory);
+			fileInput.getDirectoryPaths().add(directory.toString());
 		}
 	}
 
 	private void removeDirectory(Directory directory) {
 		directories.getItems().remove(directory);
+		fileInput.getDirectoryPaths().remove(directory.toString());
 	}
 
 	private void start() {
-		
+		if (fileInput.getPaused().get()) {
+			synchronized (fileInput.getPauseLock()) {
+				if (fileInput.getPaused().compareAndSet(true, false)) {
+					fileInput.getPauseLock().notify();
+				}
+			}
+			start.setText("Pause");
+		} else {
+			synchronized (fileInput.getPauseLock()) {
+				if (fileInput.getPaused().compareAndSet(false, true)) {
+					fileInput.getPauseLock().notify();
+				}
+			}
+			start.setText("Start");
+		}
 	}
 
 	private void removeDiskInput() {

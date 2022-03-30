@@ -1,13 +1,18 @@
 package RAF.KiDSDomaci1.model;
 
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+
 public class Cruncher {
-	
 	private int arity;
 	private String name;
+
+	private BlockingQueue<FileContent> inputContent;
 	
 	public Cruncher(int arity) {
 		this.arity = arity;
 		this.name = "Counter 0";
+		this.inputContent = new LinkedBlockingQueue<>();
 	}
 	
 	@Override
@@ -18,5 +23,8 @@ public class Cruncher {
 	public int getArity() {
 		return arity;
 	}
-	
+
+	public BlockingQueue<FileContent> getInputContent() {
+		return inputContent;
+	}
 }
