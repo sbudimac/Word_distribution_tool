@@ -23,7 +23,7 @@ public class Scheduler extends Task<String> {
         this.crunchers = crunchers;
         this.stopped = stopped;
         this.stopLock = stopLock;
-        this.currentFile = "";
+        this.currentFile = "Idle";
     }
 
     @Override
@@ -32,13 +32,14 @@ public class Scheduler extends Task<String> {
         while (true) {
             try {
                 currentFile = files.take();
-                if (currentFile.equals("/")) {
+                if (currentFile.equals("\\")) {
                     break;
                 }
+                updateMessage(currentFileName(currentFile));
                 Future<String> fileToRead = MainView.inputThreadPool.submit(new InputReader(currentFile));
                 String readFile = fileToRead.get();
                 if (readFile == null) {
-                    updateMessage("");
+                    updateMessage("Idle");
                     break;
                 }
                 if (!stopped.get()) {
@@ -48,19 +49,24 @@ public class Scheduler extends Task<String> {
                         cruncher.getInputContent().put(content);
                     }
                 }
-                currentFile = "";
+                currentFile = "Idle";
                 updateMessage(currentFile);
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
             }
         }
         synchronized (stopLock) {
-            stopLock.notify();
+            stopLock.notifyAll();
         }
     }
 
+    private String currentFileName(String filePath) {
+        String regexPath = filePath.replace("\\", "/");
+        return regexPath.split("/")[regexPath.split("/").length - 1];
+    }
+
     @Override
-    protected String call() throws Exception {
+    protected String call() {
         return null;
     }
 

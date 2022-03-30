@@ -29,7 +29,6 @@ public class FileInput implements Runnable {
 	private final Object stopLock;
 
 	private Scheduler scheduler;
-	private Thread schedulerThread;
 
 	private volatile boolean working;
 	private final int sleepTime;
@@ -37,7 +36,6 @@ public class FileInput implements Runnable {
 	public FileInput(Disk disk) {
 		this.name = "0";
 		this.disk = disk;
-		System.out.println(this.disk.getDirectory().getName());
 		this.files = new LinkedBlockingQueue<>();
 		this.crunchers = new CopyOnWriteArrayList<>();
 		this.directoryPaths = new CopyOnWriteArrayList<>();
@@ -48,6 +46,7 @@ public class FileInput implements Runnable {
 		this.pauseLock = new Object();
 		this.stopLock = new Object();
 		this.scheduler = new Scheduler(this.files, this.crunchers, this.stopped, this.stopLock);
+		this.working = true;
 		this.sleepTime = Integer.parseInt(Config.getProperty("file_input_sleep_time"));
 	}
 	
@@ -60,9 +59,12 @@ public class FileInput implements Runnable {
 
 	@Override
 	public void run() {
-		schedulerThread = new Thread(scheduler);
+		System.out.println("pocetak run");
+		Thread schedulerThread = new Thread(scheduler);
 		schedulerThread.start();
+		System.out.println("nakon start");
 		while (working) {
+			System.out.println("working petlja");
 			synchronized (this.pauseLock) {
 				if (paused.get()) {
 					try {
@@ -103,10 +105,10 @@ public class FileInput implements Runnable {
 
 	private void readDirectory(File directory, String directoryPath) throws InterruptedException {
 		for (File file : Objects.requireNonNull(directory.listFiles())) {
+			System.out.println(file);
 			if (file.isDirectory()) {
 				readDirectory(file, directoryPath);
 			} else {
-				/*
 				if (lastModifiedMap.containsKey(file.getAbsolutePath())) {
 					if (lastModifiedMap.get(file.getAbsolutePath()) < file.lastModified()) {
 						scheduler.getFiles().put(file.getAbsolutePath());
@@ -118,10 +120,6 @@ public class FileInput implements Runnable {
 					lastModifiedMap.put(file.getAbsolutePath(), file.lastModified());
 					parentDirectories.put(file.getAbsolutePath(), directoryPath);
 				}
-				*/
-				scheduler.getFiles().put(file.getAbsolutePath());
-				lastModifiedMap.put(file.getAbsolutePath(), file.lastModified());
-				parentDirectories.put(file.getAbsolutePath(), directoryPath);
 			}
 		}
 	}
@@ -135,7 +133,7 @@ public class FileInput implements Runnable {
 			working = false;
 			stopped.compareAndSet(false, true);
 			synchronized (stopLock) {
-				scheduler.getFiles().put("/");
+				scheduler.getFiles().put("\\");
 				this.stopLock.wait();
 			}
 		} catch (InterruptedException e) {
@@ -158,5 +156,9 @@ public class FileInput implements Runnable {
 
 	public CopyOnWriteArrayList<String> getDirectoryPaths() {
 		return directoryPaths;
+	}
+
+	public CopyOnWriteArrayList<Cruncher> getCrunchers() {
+		return crunchers;
 	}
 }

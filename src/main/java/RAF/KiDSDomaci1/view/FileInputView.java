@@ -25,7 +25,7 @@ public class FileInputView {
 	ListView<Cruncher> linkedCrunchers;
 	ListView<Directory> directories;
 	ComboBox<Cruncher> availableCrunchers;
-	Button linkCrucher;
+	Button linkCruncher;
 	Button unlinkCruncher;
 	Button addDirectory;
 	Button removeDirectory;
@@ -47,7 +47,7 @@ public class FileInputView {
 
 		int width = 210;
 
-		linkedCrunchers = new ListView<Cruncher>();
+		linkedCrunchers = new ListView<>();
 		linkedCrunchers.setMinWidth(width);
 		linkedCrunchers.setMaxWidth(width);
 		linkedCrunchers.setMinHeight(150);
@@ -55,19 +55,19 @@ public class FileInputView {
 		linkedCrunchers.getSelectionModel().selectedItemProperty().addListener(e -> updateUnlinkCruncherButtonEnabled());
 		main.getChildren().add(linkedCrunchers);
 
-		availableCrunchers = new ComboBox<Cruncher>();
-		availableCrunchers.setMinWidth(width / 2 - 10);
-		availableCrunchers.setMaxWidth(width / 2 - 10);
+		availableCrunchers = new ComboBox<>();
+		availableCrunchers.setMinWidth(width / 2.0 - 10);
+		availableCrunchers.setMaxWidth(width / 2.0 - 10);
 		availableCrunchers.getSelectionModel().selectedItemProperty().addListener(e -> updateLinkCruncherButtonEnabled());
 
-		linkCrucher = new Button("Link cruncher");
-		linkCrucher.setOnAction(e -> linkCruncher(availableCrunchers.getSelectionModel().getSelectedItem()));
-		linkCrucher.setMinWidth(width / 2 - 10);
-		linkCrucher.setMaxWidth(width / 2 - 10);
-		linkCrucher.setDisable(true);
+		linkCruncher = new Button("Link cruncher");
+		linkCruncher.setOnAction(e -> linkCruncher(availableCrunchers.getSelectionModel().getSelectedItem()));
+		linkCruncher.setMinWidth(width / 2.0 - 10);
+		linkCruncher.setMaxWidth(width / 2.0 - 10);
+		linkCruncher.setDisable(true);
 
 		HBox hBox = new HBox();
-		hBox.getChildren().addAll(availableCrunchers, linkCrucher);
+		hBox.getChildren().addAll(availableCrunchers, linkCruncher);
 		HBox.setMargin(availableCrunchers, new Insets(0, 20, 0, 0));
 		VBox.setMargin(hBox, new Insets(5, 0, 0, 0));
 		main.getChildren().add(hBox);
@@ -94,13 +94,13 @@ public class FileInputView {
 
 		addDirectory = new Button("Add dir");
 		addDirectory.setOnAction(e -> addDirectory());
-		addDirectory.setMinWidth(width / 2 - 10);
-		addDirectory.setMaxWidth(width / 2 - 10);
+		addDirectory.setMinWidth(width / 2.0 - 10);
+		addDirectory.setMaxWidth(width / 2.0 - 10);
 
 		removeDirectory = new Button("Remove dir");
 		removeDirectory.setOnAction(e -> removeDirectory(directories.getSelectionModel().getSelectedItem()));
-		removeDirectory.setMinWidth(width / 2 - 10);
-		removeDirectory.setMaxWidth(width / 2 - 10);
+		removeDirectory.setMinWidth(width / 2.0 - 10);
+		removeDirectory.setMaxWidth(width / 2.0 - 10);
 		removeDirectory.setDisable(true);
 
 		hBox = new HBox();
@@ -141,13 +141,13 @@ public class FileInputView {
 		if(cruncher != null) {
 			for(Cruncher linkedCruncher: linkedCrunchers.getItems()) {
 				if(cruncher == linkedCruncher) {
-					linkCrucher.setDisable(true);
+					linkCruncher.setDisable(true);
 					return;
 				}
 			}
-			linkCrucher.setDisable(false);
+			linkCruncher.setDisable(false);
 		} else {
-			linkCrucher.setDisable(true);
+			linkCruncher.setDisable(true);
 		}
 	}
 	
@@ -168,16 +168,19 @@ public class FileInputView {
 	private void linkCruncher(Cruncher cruncher) {
 		linkedCrunchers.getItems().add(cruncher);
 		updateLinkCruncherButtonEnabled();
+		fileInput.getCrunchers().add(cruncher);
 	}
 	
 	public void removeLinkedCruncher(Cruncher cruncher) {
 		linkedCrunchers.getItems().remove(cruncher);
 		updateLinkCruncherButtonEnabled();
+		fileInput.getCrunchers().remove(cruncher);
 	}
 
 	private void unlinkCruncher(Cruncher cruncher) {
 		linkedCrunchers.getItems().remove(cruncher);
 		updateLinkCruncherButtonEnabled();
+		fileInput.getCrunchers().remove(cruncher);
 	}
 
 	private void addDirectory() {
@@ -210,14 +213,14 @@ public class FileInputView {
 		if (fileInput.getPaused().get()) {
 			synchronized (fileInput.getPauseLock()) {
 				if (fileInput.getPaused().compareAndSet(true, false)) {
-					fileInput.getPauseLock().notify();
+					fileInput.getPauseLock().notifyAll();
 				}
 			}
 			start.setText("Pause");
 		} else {
 			synchronized (fileInput.getPauseLock()) {
 				if (fileInput.getPaused().compareAndSet(false, true)) {
-					fileInput.getPauseLock().notify();
+					fileInput.getPauseLock().notifyAll();
 				}
 			}
 			start.setText("Start");
