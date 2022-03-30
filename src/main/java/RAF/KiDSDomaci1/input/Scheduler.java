@@ -2,7 +2,9 @@ package RAF.KiDSDomaci1.input;
 
 import RAF.KiDSDomaci1.model.Cruncher;
 import RAF.KiDSDomaci1.model.FileContent;
+import RAF.KiDSDomaci1.model.SlashConverter;
 import RAF.KiDSDomaci1.view.MainView;
+import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Task;
 
 import java.util.concurrent.BlockingQueue;
@@ -35,7 +37,7 @@ public class Scheduler extends Task<String> {
                 if (currentFile.equals("\\")) {
                     break;
                 }
-                updateMessage(currentFileName(currentFile));
+                updateMessage(SlashConverter.currentFileName(currentFile));
                 Future<String> fileToRead = MainView.inputThreadPool.submit(new InputReader(currentFile));
                 String readFile = fileToRead.get();
                 if (readFile == null) {
@@ -58,11 +60,6 @@ public class Scheduler extends Task<String> {
         synchronized (stopLock) {
             stopLock.notifyAll();
         }
-    }
-
-    private String currentFileName(String filePath) {
-        String regexPath = filePath.replace("\\", "/");
-        return regexPath.split("/")[regexPath.split("/").length - 1];
     }
 
     @Override

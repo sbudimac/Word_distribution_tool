@@ -124,6 +124,7 @@ public class FileInputView {
 		main.getChildren().add(removeDiskInput);
 
 		status = new Text("Idle");
+		status.textProperty().bind(fileInput.getScheduler().messageProperty());
 		VBox.setMargin(status, new Insets(5, 0, 0, 0));
 		main.getChildren().add(status);
 	}

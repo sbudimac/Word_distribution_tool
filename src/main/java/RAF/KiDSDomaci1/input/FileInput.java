@@ -161,4 +161,8 @@ public class FileInput implements Runnable {
 	public CopyOnWriteArrayList<Cruncher> getCrunchers() {
 		return crunchers;
 	}
+
+	public Scheduler getScheduler() {
+		return scheduler;
+	}
 }
