@@ -1,8 +1,12 @@
 package RAF.KiDSDomaci1.view;
 
+import RAF.KiDSDomaci1.cruncher.CounterCruncher;
 import RAF.KiDSDomaci1.model.Cruncher;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
+import javafx.scene.control.ListView;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
@@ -11,13 +15,18 @@ public class CruncherView {
 
 	private MainView mainView;
 	private Cruncher cruncher;
-	private Text status;
-
+	//private Text status;
+	private ListView<String> status;
+	private ObservableList<String> statusList;
 	private Pane main;
 
 	public CruncherView(MainView mainView, Cruncher cruncher) {
 		this.mainView = mainView;
 		this.cruncher = cruncher;
+		this.statusList = FXCollections.observableArrayList();
+		CounterCruncher counterCruncher = new CounterCruncher(cruncher, statusList);
+		Thread cruncherThread = new Thread(counterCruncher);
+		cruncherThread.start();
 		
 		main = new VBox();
 
@@ -34,7 +43,8 @@ public class CruncherView {
 		main.getChildren().add(remove);
 		VBox.setMargin(remove, new Insets(0, 0, 5, 0));
 
-		status = new Text("");
+		status = new ListView<>(statusList);
+		//status = new Text("");
 		main.getChildren().add(status);
 
 		VBox.setMargin(main, new Insets(0, 0, 15, 0));

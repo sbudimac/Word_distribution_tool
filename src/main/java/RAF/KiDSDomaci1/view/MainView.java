@@ -12,6 +12,7 @@ import RAF.KiDSDomaci1.model.Cruncher;
 import RAF.KiDSDomaci1.model.Disk;
 import RAF.KiDSDomaci1.input.FileInput;
 import javafx.application.Platform;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
