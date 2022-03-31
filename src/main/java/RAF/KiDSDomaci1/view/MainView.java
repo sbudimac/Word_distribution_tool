@@ -11,7 +11,9 @@ import RAF.KiDSDomaci1.app.Config;
 import RAF.KiDSDomaci1.model.Cruncher;
 import RAF.KiDSDomaci1.model.Disk;
 import RAF.KiDSDomaci1.input.FileInput;
+import RAF.KiDSDomaci1.output.CacheOutput;
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.chart.LineChart;
@@ -42,6 +44,7 @@ public class MainView {
 	private ArrayList<FileInputView> fileInputViews;
 	private LineChart<Number, Number> lineChart;
 	private ArrayList<Cruncher> availableCrunchers;
+	private ObservableList<String> resultsList;
 
 	private Button addCruncher;
 
@@ -178,11 +181,13 @@ public class MainView {
 	private void initRight(BorderPane borderPane) {
 		outputThreadPool = Executors.newCachedThreadPool();
 
+		this.resultsList = FXCollections.observableArrayList();
+
 		right = new VBox();
 		right.setPadding(new Insets(10));
 		right.setMaxWidth(200);
 
-		results = new ListView<>();
+		results = new ListView<>(resultsList);
 		right.getChildren().add(results);
 		VBox.setMargin(results, new Insets(0, 0, 10, 0));
 		results.getSelectionModel().selectedItemProperty().addListener(e -> updateResultButtons());
@@ -322,5 +327,9 @@ public class MainView {
 
 	public Pane getRight() {
 		return right;
+	}
+
+	public ObservableList<String> getResultsList() {
+		return resultsList;
 	}
 }

@@ -50,16 +50,16 @@ public class CounterCruncher extends Task {
                 );
                 System.out.println("Crunching...");
                 for (CacheOutput outputComponent : outputComponents) {
-                    String outputName = contentName + "-arity:" + cruncher.getArity();
+                    String outputName = contentName + "-arity" + cruncher.getArity();
                     boolean isPresent = false;
                     CrunchedFile crunchedFile = new CrunchedFile(outputName, crunchingResult);
                     if (!outputComponent.getOutputResult().containsKey(contentName)) {
                         outputComponent.getInputContent().put(crunchedFile);
-                        Platform.runLater(() -> outputComponent.getResultsList().add(SlashConverter.currentFileName(contentName) + "*"));
+                        Platform.runLater(() -> outputComponent.getResultsList().add(SlashConverter.currentFileName(contentName) + "-arity" + cruncher.getArity() + "*"));
                     } else {
                         isPresent = true;
                     }
-                    notifierThreadPool.submit(new CruncherNotifier(outputComponent, crunchedFile, statusList, isPresent));
+                    notifierThreadPool.submit(new CruncherNotifier(outputComponent, crunchedFile, statusList, contentName, isPresent));
                 }
             } catch (InterruptedException e) {
                 Platform.runLater(() -> statusList.clear());

@@ -4,7 +4,6 @@ import RAF.KiDSDomaci1.model.Cruncher;
 import RAF.KiDSDomaci1.model.FileContent;
 import RAF.KiDSDomaci1.model.SlashConverter;
 import RAF.KiDSDomaci1.view.MainView;
-import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Task;
 
 import java.util.concurrent.BlockingQueue;
@@ -39,15 +38,13 @@ public class Scheduler extends Task<String> {
                 }
                 updateMessage(SlashConverter.currentFileName(currentFile));
                 Future<String> fileToRead = MainView.inputThreadPool.submit(new InputReader(currentFile));
-                String readFile = fileToRead.get();
-                if (readFile == null) {
+                if (fileToRead.get() == null) {
                     updateMessage("Idle");
                     break;
                 }
                 if (!stopped.get()) {
-                    FileContent content;
                     for (Cruncher cruncher : crunchers) {
-                        content = new FileContent(currentFile, readFile);
+                        FileContent content = new FileContent(currentFile, fileToRead.get());
                         cruncher.getInputContent().put(content);
                     }
                 }
@@ -55,6 +52,9 @@ public class Scheduler extends Task<String> {
                 updateMessage(currentFile);
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
+                currentFile = "Idle";
+                updateMessage(currentFile);
+                return;
             }
         }
         synchronized (stopLock) {

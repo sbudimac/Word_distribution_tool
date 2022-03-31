@@ -59,12 +59,9 @@ public class FileInput implements Runnable {
 
 	@Override
 	public void run() {
-		System.out.println("pocetak run");
 		Thread schedulerThread = new Thread(scheduler);
 		schedulerThread.start();
-		System.out.println("nakon start");
 		while (working) {
-			System.out.println("working petlja");
 			synchronized (this.pauseLock) {
 				if (paused.get()) {
 					try {
@@ -90,10 +87,10 @@ public class FileInput implements Runnable {
 				}
 			}
 			System.out.println("Scan over.");
-			synchronized (pauseLock) {
+			synchronized (this.pauseLock) {
 				if (!paused.get()) {
 					try {
-						pauseLock.wait(sleepTime);
+						this.pauseLock.wait(sleepTime);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 						return;

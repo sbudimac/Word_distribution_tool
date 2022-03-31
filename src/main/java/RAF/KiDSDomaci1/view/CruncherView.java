@@ -2,6 +2,7 @@ package RAF.KiDSDomaci1.view;
 
 import RAF.KiDSDomaci1.cruncher.CounterCruncher;
 import RAF.KiDSDomaci1.model.Cruncher;
+import RAF.KiDSDomaci1.output.CacheOutput;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -15,16 +16,18 @@ public class CruncherView {
 
 	private MainView mainView;
 	private Cruncher cruncher;
-	//private Text status;
 	private ListView<String> status;
 	private ObservableList<String> statusList;
 	private Pane main;
+	private CacheOutput cacheOutput;
 
 	public CruncherView(MainView mainView, Cruncher cruncher) {
 		this.mainView = mainView;
 		this.cruncher = cruncher;
 		this.statusList = FXCollections.observableArrayList();
+		cacheOutput = new CacheOutput(mainView.getResultsList());
 		CounterCruncher counterCruncher = new CounterCruncher(cruncher, statusList);
+		counterCruncher.getOutputComponents().add(cacheOutput);
 		Thread cruncherThread = new Thread(counterCruncher);
 		cruncherThread.start();
 		
@@ -44,7 +47,6 @@ public class CruncherView {
 		VBox.setMargin(remove, new Insets(0, 0, 5, 0));
 
 		status = new ListView<>(statusList);
-		//status = new Text("");
 		main.getChildren().add(status);
 
 		VBox.setMargin(main, new Insets(0, 0, 15, 0));
