@@ -11,20 +11,21 @@ public class CruncherWorker extends RecursiveTask<Map<String, Long>> {
     private int arity;
     private int start;
     private int length;
-    private boolean smallJob;
+    private boolean subJob;
 
-    public CruncherWorker(String content, int arity, int start, int length, boolean smallJob) {
+    public CruncherWorker(String content, int arity, int start, int length, boolean subJob) {
         this.counterDataLimit = Integer.parseInt(Config.getProperty("counter_data_limit"));
         this.content = content;
         this.arity = arity;
         this.start = start;
         this.length = length;
+        this.subJob = subJob;
     }
 
     @Override
     protected Map<String, Long> compute() {
         Map<String, Long> crunchingResult = new HashMap<>();
-        if (smallJob) {
+        if (subJob) {
             LinkedList<String> currentBag = new LinkedList<>();
             if (length - start <= arity) {
                 return crunchingResult;
@@ -66,7 +67,31 @@ public class CruncherWorker extends RecursiveTask<Map<String, Long>> {
                 }
             }
         } else {
-
+            List<CruncherWorker> subWorkers = new ArrayList<>();
+            int previousScopeIndex = 0;
+            for (int L = counterDataLimit; L < length; L += counterDataLimit) {
+                char c = content.charAt(L);
+                if (L < length && c != ' ' && c != '\t' && c != '\n') {
+                    L++;
+                }
+                subWorkers.add(new CruncherWorker(content, arity, previousScopeIndex, L, true));
+                previousScopeIndex = L + 1;
+            }
+            for (CruncherWorker subWorker : subWorkers) {
+                subWorker.fork();
+            }
+            CruncherWorker lastWorker = new CruncherWorker(content, arity, previousScopeIndex, length, true);
+            Map<String, Long> lastResult = lastWorker.compute();
+            List<Map<String, Long>> subWorkerResults = new ArrayList<>();
+            for (CruncherWorker subWorker : subWorkers) {
+                subWorkerResults.add(subWorker.join());
+            }
+            for (Map<String, Long> subWorkerResult : subWorkerResults) {
+                for (Map.Entry<String, Long> entry : subWorkerResult.entrySet()) {
+                    lastResult.merge(entry.getKey(), entry.getValue(), Long::sum);
+                }
+            }
+            return lastResult;
         }
         return crunchingResult;
     }
