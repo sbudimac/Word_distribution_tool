@@ -11,4 +11,12 @@ public class CrunchedFile {
         this.name = name;
         this.repetitions = repetitions;
     }
+
+    public String getName() {
+        return name;
+    }
+
+    public Future<Map<String, Long>> getRepetitions() {
+        return repetitions;
+    }
 }

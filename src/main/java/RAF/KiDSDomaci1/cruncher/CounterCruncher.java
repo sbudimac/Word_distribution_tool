@@ -13,6 +13,8 @@ import javafx.concurrent.Task;
 
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 public class CounterCruncher extends Task {
@@ -21,12 +23,16 @@ public class CounterCruncher extends Task {
     private ObservableList<String> statusList;
     private CopyOnWriteArrayList<FileInput> inputComponents;
     private CopyOnWriteArrayList<CacheOutput> outputComponents;
+    private ExecutorService notifierThreadPool;
+    private final Object stopLock;
 
     public CounterCruncher(Cruncher cruncher, ObservableList<String> statusList) {
         this.cruncher = cruncher;
         this.statusList = statusList;
         this.inputComponents = new CopyOnWriteArrayList<>();
         this.outputComponents = new CopyOnWriteArrayList<>();
+        this.notifierThreadPool = Executors.newCachedThreadPool();
+        this.stopLock = new Object();
     }
 
     @Override
@@ -44,17 +50,42 @@ public class CounterCruncher extends Task {
                 );
                 System.out.println("Crunching...");
                 for (CacheOutput outputComponent : outputComponents) {
-                    CrunchedFile crunchedFile = new CrunchedFile(contentName + "-arity: " + cruncher.getArity(), crunchingResult);
+                    String outputName = contentName + "-arity:" + cruncher.getArity();
+                    boolean isPresent = false;
+                    CrunchedFile crunchedFile = new CrunchedFile(outputName, crunchingResult);
+                    if (!outputComponent.getOutputResult().containsKey(contentName)) {
+                        outputComponent.getInputContent().put(crunchedFile);
+                        Platform.runLater(() -> outputComponent.getResultsList().add(SlashConverter.currentFileName(contentName) + "*"));
+                    } else {
+                        isPresent = true;
+                    }
+                    notifierThreadPool.submit(new CruncherNotifier(outputComponent, crunchedFile, statusList, isPresent));
                 }
             } catch (InterruptedException e) {
+                Platform.runLater(() -> statusList.clear());
                 e.printStackTrace();
+                return;
             }
+        }
+        synchronized (stopLock) {
+            stopLock.notifyAll();
         }
     }
 
     @Override
     protected Object call() {
         return null;
+    }
+
+    public void stop() {
+        synchronized (stopLock) {
+            try {
+                cruncher.getInputContent().put(new FileContent("\\", ""));
+                stopLock.wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public CopyOnWriteArrayList<FileInput> getInputComponents() {
