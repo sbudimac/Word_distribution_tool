@@ -19,13 +19,11 @@ public class CruncherView {
 	private ListView<String> status;
 	private ObservableList<String> statusList;
 	private Pane main;
-	private CacheOutput cacheOutput;
 
-	public CruncherView(MainView mainView, Cruncher cruncher) {
+	public CruncherView(MainView mainView, Cruncher cruncher, CacheOutput cacheOutput) {
 		this.mainView = mainView;
 		this.cruncher = cruncher;
 		this.statusList = FXCollections.observableArrayList();
-		cacheOutput = new CacheOutput(mainView.getResultsList());
 		CounterCruncher counterCruncher = new CounterCruncher(cruncher, statusList);
 		counterCruncher.getOutputComponents().add(cacheOutput);
 		Thread cruncherThread = new Thread(counterCruncher);

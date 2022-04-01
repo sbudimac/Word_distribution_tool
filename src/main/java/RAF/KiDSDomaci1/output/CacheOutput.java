@@ -13,6 +13,7 @@ public class CacheOutput implements Runnable {
     private ConcurrentHashMap<String, Future<Map<String, Long>>> outputResult;
     private CopyOnWriteArrayList<Cruncher> crunchers;
     private ObservableList<String> resultsList;
+    private ExecutorService sortingPool;
     private final Object stopLock;
 
     public CacheOutput(ObservableList<String> resultsList) {
@@ -20,12 +21,14 @@ public class CacheOutput implements Runnable {
         this.outputResult = new ConcurrentHashMap<>();
         this.crunchers = new CopyOnWriteArrayList<>();
         this.resultsList = resultsList;
+        this.sortingPool = Executors.newCachedThreadPool();
         this.stopLock = new Object();
     }
 
     @Override
     public void run() {
         while (true) {
+            System.out.println("WOOOOOOO");
             try {
                 CrunchedFile file = inputContent.take();
                 if (file.getName().equals("\\")) {
@@ -55,6 +58,17 @@ public class CacheOutput implements Runnable {
         }
     }
 
+    public Map<String, Long> getResultsForName(String fileName) {
+        if (outputResult.get(fileName).isDone()) {
+            try {
+                return outputResult.get(fileName).get();
+            } catch (ExecutionException | InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
+    }
+
     public BlockingQueue<CrunchedFile> getInputContent() {
         return inputContent;
     }
@@ -65,5 +79,9 @@ public class CacheOutput implements Runnable {
 
     public ObservableList<String> getResultsList() {
         return resultsList;
+    }
+
+    public ExecutorService getSortingPool() {
+        return sortingPool;
     }
 }

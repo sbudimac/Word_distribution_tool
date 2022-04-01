@@ -2,6 +2,7 @@ package RAF.KiDSDomaci1.view;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -12,20 +13,16 @@ import RAF.KiDSDomaci1.model.Cruncher;
 import RAF.KiDSDomaci1.model.Disk;
 import RAF.KiDSDomaci1.input.FileInput;
 import RAF.KiDSDomaci1.output.CacheOutput;
+import RAF.KiDSDomaci1.output.SortingWorker;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
+import javafx.scene.Scene;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
-import javafx.scene.control.Alert;
+import javafx.scene.control.*;
 import javafx.scene.control.Alert.AlertType;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.ListView;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.SelectionMode;
-import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
@@ -45,6 +42,7 @@ public class MainView {
 	private LineChart<Number, Number> lineChart;
 	private ArrayList<Cruncher> availableCrunchers;
 	private ObservableList<String> resultsList;
+	private CacheOutput cacheOutput;
 
 	private Button addCruncher;
 
@@ -182,6 +180,9 @@ public class MainView {
 		outputThreadPool = Executors.newCachedThreadPool();
 
 		this.resultsList = FXCollections.observableArrayList();
+		cacheOutput = new CacheOutput(resultsList);
+		Thread cacheOutputThread = new Thread(cacheOutput);
+		cacheOutputThread.start();
 
 		right = new VBox();
 		right.setPadding(new Insets(10));
@@ -239,11 +240,46 @@ public class MainView {
 	}
 
 	private void getSingleResult() {
-		
+		String chosenFile = results.getSelectionModel().getSelectedItem();
+		String labelName = chosenFile;
+		if (!chosenFile.endsWith("*")) {
+			for (String fileName : cacheOutput.getOutputResult().keySet()) {
+				if (fileName.endsWith(chosenFile)) {
+					chosenFile = fileName;
+					break;
+				}
+			}
+			Map<String, Long> result = cacheOutput.getResultsForName(chosenFile);
+			if (result != null) {
+				ProgressBar progressBar = new ProgressBar();
+				Label pbLabel = new Label(labelName);
+				right.getChildren().add(progressBar);
+				right.getChildren().add(pbLabel);
+				cacheOutput.getSortingPool().submit(new SortingWorker(result, lineChart, progressBar, pbLabel, right));
+			} else {
+				resultNotReady();
+			}
+		} else {
+			resultNotReady();
+		}
 	}
 
 	private void sumResults() {
 		
+	}
+
+	private void resultNotReady() {
+		Stage stage = new Stage();
+		stage.setTitle("Result not ready");
+
+		VBox vBox = new VBox();
+
+		Button okBtn = new Button("OK");
+		okBtn.setOnAction(event -> stage.close());
+		vBox.getChildren().add(okBtn);
+
+		stage.setScene(new Scene(vBox, 300, 300));
+		stage.show();
 	}
 
 	public void addFileInput(FileInput fileInput) {
@@ -295,7 +331,7 @@ public class MainView {
 					}
 				}
 				Cruncher cruncher = new Cruncher(arity);
-				CruncherView cruncherView = new CruncherView(this, cruncher);
+				CruncherView cruncherView = new CruncherView(this, cruncher, cacheOutput);
 				this.cruncher.getChildren().add(cruncherView.getCruncherView());
 				availableCrunchers.add(cruncher);
 				updateCrunchers(availableCrunchers);

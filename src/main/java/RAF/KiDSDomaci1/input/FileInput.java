@@ -77,7 +77,6 @@ public class FileInput implements Runnable {
 			}
 			System.out.println("Scannig...");
 			for (String directoryPath : directoryPaths) {
-				System.out.println(directoryPath);
 				File directory = new File(directoryPath);
 				try {
 					readDirectory(directory, directoryPath);
@@ -102,7 +101,6 @@ public class FileInput implements Runnable {
 
 	private void readDirectory(File directory, String directoryPath) throws InterruptedException {
 		for (File file : Objects.requireNonNull(directory.listFiles())) {
-			System.out.println(file);
 			if (file.isDirectory()) {
 				readDirectory(file, directoryPath);
 			} else {
