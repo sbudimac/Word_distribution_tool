@@ -28,6 +28,7 @@ public class FileInput implements Runnable {
 	private final Object stopLock;
 
 	private Scheduler scheduler;
+	private Thread schedulerThread;
 
 	private volatile boolean working;
 	private final int sleepTime;
@@ -57,7 +58,7 @@ public class FileInput implements Runnable {
 
 	@Override
 	public void run() {
-		Thread schedulerThread = new Thread(scheduler);
+		schedulerThread = new Thread(scheduler);
 		schedulerThread.start();
 		while (working) {
 			synchronized (this.pauseLock) {
@@ -155,5 +156,9 @@ public class FileInput implements Runnable {
 
 	public Scheduler getScheduler() {
 		return scheduler;
+	}
+
+	public Thread getSchedulerThread() {
+		return schedulerThread;
 	}
 }

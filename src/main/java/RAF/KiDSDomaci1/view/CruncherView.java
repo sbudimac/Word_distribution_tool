@@ -16,6 +16,7 @@ public class CruncherView {
 
 	private MainView mainView;
 	private Cruncher cruncher;
+	private CounterCruncher counterCruncher;
 	private ListView<String> status;
 	private ObservableList<String> statusList;
 	private Pane main;
@@ -24,7 +25,7 @@ public class CruncherView {
 		this.mainView = mainView;
 		this.cruncher = cruncher;
 		this.statusList = FXCollections.observableArrayList();
-		CounterCruncher counterCruncher = new CounterCruncher(cruncher, statusList);
+		this.counterCruncher = new CounterCruncher(cruncher, statusList);
 		counterCruncher.getOutputComponents().add(cacheOutput);
 		Thread cruncherThread = new Thread(counterCruncher);
 		cruncherThread.start();
@@ -60,6 +61,10 @@ public class CruncherView {
 
 	public Cruncher getCruncher() {
 		return cruncher;
+	}
+
+	public CounterCruncher getCounterCruncher() {
+		return counterCruncher;
 	}
 
 	public MainView getMainView() {

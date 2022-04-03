@@ -1,7 +1,6 @@
 package RAF.KiDSDomaci1.output;
 
 import RAF.KiDSDomaci1.model.CrunchedFile;
-import RAF.KiDSDomaci1.model.Cruncher;
 import RAF.KiDSDomaci1.view.MainView;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;

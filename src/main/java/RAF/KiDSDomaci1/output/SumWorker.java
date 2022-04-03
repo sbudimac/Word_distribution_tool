@@ -1,5 +1,6 @@
 package RAF.KiDSDomaci1.output;
 
+import RAF.KiDSDomaci1.view.MainView;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.scene.control.Label;
@@ -34,26 +35,31 @@ public class SumWorker implements Callable<Map<String, Long>> {
 
     @Override
     public Map<String, Long> call() throws Exception {
-        System.out.println("WOOOOO1");
-        Map<String, Long> sumResult = new HashMap<>();
-        List<Map<String, Long>> results = new ArrayList<>();
-        for (String name : toSum) {
-            results.add(cacheOutput.getResultsForName(name));
-        }
-        System.out.println("WOOOOOO2");
-        for (Map<String, Long> result : results) {
-            for (Map.Entry<String, Long> res : result.entrySet()) {
-                sumResult.merge(res.getKey(), res.getValue(), Long::sum);
+        try {
+            System.out.println("WOOOOO1");
+            Map<String, Long> sumResult = new HashMap<>();
+            List<Map<String, Long>> results = new ArrayList<>();
+            for (String name : toSum) {
+                results.add(cacheOutput.getResultsForName(name));
             }
-            progress++;
-            Platform.runLater(() -> progressBar.setProgress((double) progress / (double) results.size()));
+            System.out.println("WOOOOOO2");
+            for (Map<String, Long> result : results) {
+                for (Map.Entry<String, Long> res : result.entrySet()) {
+                    sumResult.merge(res.getKey(), res.getValue(), Long::sum);
+                }
+                progress++;
+                Platform.runLater(() -> progressBar.setProgress((double) progress / (double) results.size()));
+            }
+            System.out.println("WOOOOOOOO3");
+            Platform.runLater(() -> {
+                right.getChildren().remove(progressBar);
+                right.getChildren().remove(pbLabel);
+                resultsList.set(resultsList.indexOf(sumName + "*"), sumName);
+            });
+            return sumResult;
+        } catch (OutOfMemoryError e) {
+            MainView.getInstance().stopApp();
         }
-        System.out.println("WOOOOOOOO3");
-        Platform.runLater(() -> {
-            right.getChildren().remove(progressBar);
-            right.getChildren().remove(pbLabel);
-            resultsList.set(resultsList.indexOf(sumName + "*"), sumName);
-        });
-        return sumResult;
+        return null;
     }
 }

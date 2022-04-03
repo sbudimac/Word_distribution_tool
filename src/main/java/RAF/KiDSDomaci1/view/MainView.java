@@ -34,6 +34,8 @@ import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
 public class MainView {
+	private static MainView instance = null;
+
 	private Stage stage;
 	private ComboBox<Disk> disks;
 	private HBox left;
@@ -42,6 +44,7 @@ public class MainView {
 	private ListView<String> results;
 	private Button addFileInput, singleResult, sumResult;
 	private ArrayList<FileInputView> fileInputViews;
+	private ArrayList<CruncherView> cruncherViews;
 	private LineChart<Number, Number> lineChart;
 	private ArrayList<Cruncher> availableCrunchers;
 	private ObservableList<String> resultsList;
@@ -57,6 +60,7 @@ public class MainView {
 		this.stage = stage;
 
 		fileInputViews = new ArrayList<>();
+		cruncherViews = new ArrayList<>();
 		availableCrunchers = new ArrayList<>();
 
 		left = new HBox();
@@ -385,12 +389,29 @@ public class MainView {
 		});
 	}
 
-	public void stopCrunchers() {
-		
-	}
-
-	public void stopFileInputs() {
-		
+	public void stopApp() {
+		Platform.runLater(() -> {
+			Alert alert = new Alert(AlertType.WARNING);
+			alert.setTitle("Error");
+			alert.setHeaderText("Out of memory, application stopping");
+			alert.setContentText(null);
+			alert.setOnCloseRequest(dialogEvent -> {
+				Platform.exit();
+				System.exit(0);
+			});
+			inputThreadPool.shutdownNow();
+			cruncherThreadPool.shutdownNow();
+			outputThreadPool.shutdownNow();
+			for (CruncherView cruncherView : cruncherViews) {
+				cruncherView.getCounterCruncher().getNotifierThreadPool().shutdownNow();
+			}
+			for (FileInputView fileInputView : fileInputViews) {
+				fileInputView.getFileInput().getSchedulerThread().interrupt();
+				fileInputView.getFileInput().interrupt();
+			}
+			cacheOutput.getSortingPool().shutdownNow();
+			alert.showAndWait();
+		});
 	}
 
 	public void removeCruncher(CruncherView cruncherView) {
@@ -408,5 +429,12 @@ public class MainView {
 
 	public ObservableList<String> getResultsList() {
 		return resultsList;
+	}
+
+	public static MainView getInstance() {
+		if (instance == null) {
+			instance = new MainView();
+		}
+		return instance;
 	}
 }

@@ -1,6 +1,7 @@
 package RAF.KiDSDomaci1.cruncher;
 
 import RAF.KiDSDomaci1.app.Config;
+import RAF.KiDSDomaci1.view.MainView;
 
 import java.util.*;
 import java.util.concurrent.RecursiveTask;
@@ -24,76 +25,81 @@ public class CruncherWorker extends RecursiveTask<Map<String, Long>> {
 
     @Override
     protected Map<String, Long> compute() {
-        Map<String, Long> crunchingResult = new HashMap<>();
-        if (subJob) {
-            LinkedList<String> currentBag = new LinkedList<>();
-            if (length - start <= arity) {
-                return crunchingResult;
-            } else {
-                int pointer = start;
-                int previousWordIndex = start;
-                int wordNumber = 0;
-                for (; pointer < length; pointer++) {
-                    if (wordNumber < arity) {
+        try {
+            Map<String, Long> crunchingResult = new HashMap<>();
+            if (subJob) {
+                LinkedList<String> currentBag = new LinkedList<>();
+                if (length - start <= arity) {
+                    return crunchingResult;
+                } else {
+                    int pointer = start;
+                    int previousWordIndex = start;
+                    int wordNumber = 0;
+                    for (; pointer < length; pointer++) {
+                        if (wordNumber < arity) {
+                            char c = content.charAt(pointer);
+                            if (c == ' ' || c == '\t' || c == '\n') {
+                                currentBag.add(content.substring(previousWordIndex, pointer));
+                                previousWordIndex = pointer + 1;
+                                wordNumber++;
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                    if (pointer == length) {
+                        currentBag.add(content.substring(previousWordIndex, pointer));
+                        insertBag(currentBag, crunchingResult);
+                        return crunchingResult;
+                    }
+                    insertBag(currentBag, crunchingResult);
+                    for (; pointer < length; pointer++) {
                         char c = content.charAt(pointer);
                         if (c == ' ' || c == '\t' || c == '\n') {
+                            currentBag.remove(0);
                             currentBag.add(content.substring(previousWordIndex, pointer));
                             previousWordIndex = pointer + 1;
-                            wordNumber++;
+                            insertBag(currentBag, crunchingResult);
                         }
-                    } else {
-                        break;
                     }
-                }
-                if (pointer == length) {
-                    currentBag.add(content.substring(previousWordIndex, pointer));
-                    insertBag(currentBag, crunchingResult);
-                    return crunchingResult;
-                }
-                insertBag(currentBag, crunchingResult);
-                for (; pointer < length; pointer++) {
-                    char c = content.charAt(pointer);
-                    if (c == ' ' || c == '\t' || c == '\n') {
+                    if (pointer == length) {
                         currentBag.remove(0);
                         currentBag.add(content.substring(previousWordIndex, pointer));
-                        previousWordIndex = pointer + 1;
                         insertBag(currentBag, crunchingResult);
                     }
                 }
-                if (pointer == length) {
-                    currentBag.remove(0);
-                    currentBag.add(content.substring(previousWordIndex, pointer));
-                    insertBag(currentBag, crunchingResult);
+            } else {
+                List<CruncherWorker> subWorkers = new ArrayList<>();
+                int previousScopeIndex = 0;
+                for (int L = counterDataLimit; L < length; L += counterDataLimit) {
+                    char c = content.charAt(L);
+                    if (c != ' ' && c != '\t' && c != '\n') {
+                        L++;
+                    }
+                    subWorkers.add(new CruncherWorker(content, arity, previousScopeIndex, L, true));
+                    previousScopeIndex = L + 1;
                 }
-            }
-        } else {
-            List<CruncherWorker> subWorkers = new ArrayList<>();
-            int previousScopeIndex = 0;
-            for (int L = counterDataLimit; L < length; L += counterDataLimit) {
-                char c = content.charAt(L);
-                if (c != ' ' && c != '\t' && c != '\n') {
-                    L++;
+                for (CruncherWorker subWorker : subWorkers) {
+                    subWorker.fork();
                 }
-                subWorkers.add(new CruncherWorker(content, arity, previousScopeIndex, L, true));
-                previousScopeIndex = L + 1;
-            }
-            for (CruncherWorker subWorker : subWorkers) {
-                subWorker.fork();
-            }
-            CruncherWorker lastWorker = new CruncherWorker(content, arity, previousScopeIndex, length, true);
-            Map<String, Long> lastResult = lastWorker.compute();
-            List<Map<String, Long>> subWorkerResults = new ArrayList<>();
-            for (CruncherWorker subWorker : subWorkers) {
-                subWorkerResults.add(subWorker.join());
-            }
-            for (Map<String, Long> subWorkerResult : subWorkerResults) {
-                for (Map.Entry<String, Long> entry : subWorkerResult.entrySet()) {
-                    lastResult.merge(entry.getKey(), entry.getValue(), Long::sum);
+                CruncherWorker lastWorker = new CruncherWorker(content, arity, previousScopeIndex, length, true);
+                Map<String, Long> lastResult = lastWorker.compute();
+                List<Map<String, Long>> subWorkerResults = new ArrayList<>();
+                for (CruncherWorker subWorker : subWorkers) {
+                    subWorkerResults.add(subWorker.join());
                 }
+                for (Map<String, Long> subWorkerResult : subWorkerResults) {
+                    for (Map.Entry<String, Long> entry : subWorkerResult.entrySet()) {
+                        lastResult.merge(entry.getKey(), entry.getValue(), Long::sum);
+                    }
+                }
+                return lastResult;
             }
-            return lastResult;
+            return crunchingResult;
+        } catch (OutOfMemoryError e) {
+            MainView.getInstance().stopApp();
         }
-        return crunchingResult;
+        return null;
     }
 
     private void insertBag(LinkedList<String> words, Map<String, Long> crunchingResult) {

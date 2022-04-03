@@ -89,4 +89,8 @@ public class CounterCruncher extends Task {
     public CopyOnWriteArrayList<CacheOutput> getOutputComponents() {
         return outputComponents;
     }
+
+    public ExecutorService getNotifierThreadPool() {
+        return notifierThreadPool;
+    }
 }
