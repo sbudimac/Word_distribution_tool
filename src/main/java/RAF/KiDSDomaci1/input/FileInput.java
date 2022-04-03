@@ -21,7 +21,6 @@ public class FileInput implements Runnable {
 	private CopyOnWriteArrayList<String> directoryPaths;
 
 	private ConcurrentHashMap<String, Long> lastModifiedMap;
-	private ConcurrentHashMap<String, String> parentDirectories;
 
 	private AtomicBoolean paused;
 	private AtomicBoolean stopped;
@@ -40,7 +39,6 @@ public class FileInput implements Runnable {
 		this.crunchers = new CopyOnWriteArrayList<>();
 		this.directoryPaths = new CopyOnWriteArrayList<>();
 		this.lastModifiedMap = new ConcurrentHashMap<>();
-		this.parentDirectories = new ConcurrentHashMap<>();
 		this.paused = new AtomicBoolean(true);
 		this.stopped = new AtomicBoolean(false);
 		this.pauseLock = new Object();
@@ -79,7 +77,7 @@ public class FileInput implements Runnable {
 			for (String directoryPath : directoryPaths) {
 				File directory = new File(directoryPath);
 				try {
-					readDirectory(directory, directoryPath);
+					readDirectory(directory);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 					return;
@@ -99,21 +97,19 @@ public class FileInput implements Runnable {
 		}
 	}
 
-	private void readDirectory(File directory, String directoryPath) throws InterruptedException {
+	private void readDirectory(File directory) throws InterruptedException {
 		for (File file : Objects.requireNonNull(directory.listFiles())) {
 			if (file.isDirectory()) {
-				readDirectory(file, directoryPath);
+				readDirectory(file);
 			} else {
 				if (lastModifiedMap.containsKey(file.getAbsolutePath())) {
 					if (lastModifiedMap.get(file.getAbsolutePath()) < file.lastModified()) {
 						scheduler.getFiles().put(file.getAbsolutePath());
 						lastModifiedMap.put(file.getAbsolutePath(), file.lastModified());
-						parentDirectories.put(file.getAbsolutePath(), directoryPath);
 					}
 				} else {
 					scheduler.getFiles().put(file.getAbsolutePath());
 					lastModifiedMap.put(file.getAbsolutePath(), file.lastModified());
-					parentDirectories.put(file.getAbsolutePath(), directoryPath);
 				}
 			}
 		}

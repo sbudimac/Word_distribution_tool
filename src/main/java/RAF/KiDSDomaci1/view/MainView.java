@@ -2,6 +2,7 @@ package RAF.KiDSDomaci1.view;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
@@ -12,8 +13,10 @@ import RAF.KiDSDomaci1.app.Config;
 import RAF.KiDSDomaci1.model.Cruncher;
 import RAF.KiDSDomaci1.model.Disk;
 import RAF.KiDSDomaci1.input.FileInput;
+import RAF.KiDSDomaci1.model.SlashConverter;
 import RAF.KiDSDomaci1.output.CacheOutput;
 import RAF.KiDSDomaci1.output.SortingWorker;
+import RAF.KiDSDomaci1.output.SumWorker;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -120,18 +123,14 @@ public class MainView {
 				disks.getSelectionModel().select(0);
 			}
 		} catch (Exception e) {
-			Platform.runLater(new Runnable() {
-				
-				@Override
-				public void run() {
-					Alert alert = new Alert(AlertType.ERROR);
-					alert.setTitle("Closing");
-					alert.setHeaderText("Bad config disks");
-					alert.setContentText(null);
+			Platform.runLater(() -> {
+				Alert alert = new Alert(AlertType.ERROR);
+				alert.setTitle("Closing");
+				alert.setHeaderText("Bad config disks");
+				alert.setContentText(null);
 
-					alert.showAndWait();
-					System.exit(0);
-				}
+				alert.showAndWait();
+				System.exit(0);
 			});
 		}
 
@@ -168,7 +167,7 @@ public class MainView {
 		final NumberAxis yAxis = new NumberAxis();
 		xAxis.setLabel("Bag of words");
 		yAxis.setLabel("Frequency");
-		lineChart = new LineChart<Number, Number>(xAxis, yAxis);
+		lineChart = new LineChart<>(xAxis, yAxis);
 		lineChart.setMinWidth(700);
 		lineChart.setMinHeight(600);
 		center.getChildren().add(lineChart);
@@ -249,7 +248,7 @@ public class MainView {
 					break;
 				}
 			}
-			Map<String, Long> result = cacheOutput.getResultsForName(chosenFile);
+			Map<String, Long> result = cacheOutput.getResultsIfPresent(chosenFile);
 			if (result != null) {
 				ProgressBar progressBar = new ProgressBar();
 				Label pbLabel = new Label(labelName);
@@ -257,27 +256,69 @@ public class MainView {
 				right.getChildren().add(pbLabel);
 				cacheOutput.getSortingPool().submit(new SortingWorker(result, lineChart, progressBar, pbLabel, right));
 			} else {
-				resultNotReady();
+				errorPopout("Result not ready");
 			}
 		} else {
-			resultNotReady();
+			errorPopout("Result not ready");
 		}
 	}
 
 	private void sumResults() {
-		
+		Stage popup = new Stage();
+		popup.setTitle("Enter sum name");
+		VBox vBox = new VBox();
+		TextField tf = new TextField("sum");
+		HBox buttons = new HBox();
+		Button ok = new Button("OK");
+		ok.setOnAction(event -> commitSumResult(tf, popup));
+		Button cancel = new Button("Cancel");
+		cancel.setOnAction(event -> popup.close());
+		buttons.getChildren().add(ok);
+		buttons.getChildren().add(cancel);
+		vBox.getChildren().add(tf);
+		vBox.getChildren().add(buttons);
+		popup.setScene(new Scene(vBox, 300, 300));
+		popup.show();
 	}
 
-	private void resultNotReady() {
+	private void commitSumResult(TextField tf, Stage popup) {
+		String sumName = tf.getText();
+		if (resultsList.contains(sumName) || resultsList.contains(sumName + "*")) {
+			errorPopout("Sum name is reserved");
+			return;
+		}
+		ProgressBar progressBar = new ProgressBar();
+		Label pbLabel = new Label(sumName);
+		right.getChildren().add(progressBar);
+		right.getChildren().add(pbLabel);
+		resultsList.add(sumName + "*");
+		List<String> toSum = new ArrayList<>();
+		for (String s : results.getSelectionModel().getSelectedItems()) {
+			for (String resultName : cacheOutput.getOutputResult().keySet()) {
+				if (s.endsWith("*")) {
+					if (s.substring(0, s.length() - 1).equals(SlashConverter.currentFileName(resultName))) {
+						toSum.add(resultName);
+					}
+				} else {
+					if (s.equals(SlashConverter.currentFileName(resultName))) {
+						toSum.add(resultName);
+					}
+				}
+			}
+		}
+		System.out.println(toSum);
+		SumWorker sumWorker = new SumWorker(toSum, cacheOutput, right, progressBar, pbLabel, sumName, resultsList);
+		cacheOutput.sum(sumName, sumWorker);
+		popup.close();
+	}
+
+	private void errorPopout(String message) {
 		Stage stage = new Stage();
-		stage.setTitle("Result not ready");
-
+		stage.setTitle(message);
 		VBox vBox = new VBox();
-
-		Button okBtn = new Button("OK");
-		okBtn.setOnAction(event -> stage.close());
-		vBox.getChildren().add(okBtn);
-
+		Button ok = new Button("OK");
+		ok.setOnAction(event -> stage.close());
+		vBox.getChildren().add(ok);
 		stage.setScene(new Scene(vBox, 300, 300));
 		stage.show();
 	}

@@ -16,7 +16,7 @@ public class InputReader implements Callable<String> {
     public String call() throws Exception {
         File file = new File(path);
         FileInputStream stream = new FileInputStream(file);
-        byte[] content = new byte[(int)file.length()];
+        byte[] content = new byte[(int) file.length()];
         stream.read(content);
         stream.close();
         String fileContent = new String(content, StandardCharsets.US_ASCII);

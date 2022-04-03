@@ -2,6 +2,7 @@ package RAF.KiDSDomaci1.output;
 
 import RAF.KiDSDomaci1.model.CrunchedFile;
 import RAF.KiDSDomaci1.model.Cruncher;
+import RAF.KiDSDomaci1.view.MainView;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
 
@@ -11,7 +12,6 @@ import java.util.concurrent.*;
 public class CacheOutput implements Runnable {
     private BlockingQueue<CrunchedFile> inputContent;
     private ConcurrentHashMap<String, Future<Map<String, Long>>> outputResult;
-    private CopyOnWriteArrayList<Cruncher> crunchers;
     private ObservableList<String> resultsList;
     private ExecutorService sortingPool;
     private final Object stopLock;
@@ -19,7 +19,6 @@ public class CacheOutput implements Runnable {
     public CacheOutput(ObservableList<String> resultsList) {
         this.inputContent = new LinkedBlockingQueue<>();
         this.outputResult = new ConcurrentHashMap<>();
-        this.crunchers = new CopyOnWriteArrayList<>();
         this.resultsList = resultsList;
         this.sortingPool = Executors.newCachedThreadPool();
         this.stopLock = new Object();
@@ -28,7 +27,6 @@ public class CacheOutput implements Runnable {
     @Override
     public void run() {
         while (true) {
-            System.out.println("WOOOOOOO");
             try {
                 CrunchedFile file = inputContent.take();
                 if (file.getName().equals("\\")) {
@@ -58,7 +56,7 @@ public class CacheOutput implements Runnable {
         }
     }
 
-    public Map<String, Long> getResultsForName(String fileName) {
+    public Map<String, Long> getResultsIfPresent(String fileName) {
         if (outputResult.get(fileName).isDone()) {
             try {
                 return outputResult.get(fileName).get();
@@ -67,6 +65,19 @@ public class CacheOutput implements Runnable {
             }
         }
         return null;
+    }
+
+    public Map<String, Long> getResultsForName(String fileName) {
+        try {
+            return outputResult.get(fileName).get();
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public void sum(String name, SumWorker sumWorker) {
+        outputResult.put(name, MainView.outputThreadPool.submit(sumWorker));
     }
 
     public BlockingQueue<CrunchedFile> getInputContent() {

@@ -48,12 +48,10 @@ public class Scheduler extends Task<String> {
                         cruncher.getInputContent().put(content);
                     }
                 }
-                currentFile = "Idle";
-                updateMessage(currentFile);
+                updateMessage("Idle");
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
-                currentFile = "Idle";
-                updateMessage(currentFile);
+                updateMessage("Idle");
                 return;
             }
         }

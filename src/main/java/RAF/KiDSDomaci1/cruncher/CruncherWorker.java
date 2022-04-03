@@ -71,7 +71,7 @@ public class CruncherWorker extends RecursiveTask<Map<String, Long>> {
             int previousScopeIndex = 0;
             for (int L = counterDataLimit; L < length; L += counterDataLimit) {
                 char c = content.charAt(L);
-                if (L < length && c != ' ' && c != '\t' && c != '\n') {
+                if (c != ' ' && c != '\t' && c != '\n') {
                     L++;
                 }
                 subWorkers.add(new CruncherWorker(content, arity, previousScopeIndex, L, true));
@@ -101,7 +101,7 @@ public class CruncherWorker extends RecursiveTask<Map<String, Long>> {
         Collections.sort(sortedWords);
         String bag = String.join(", ", sortedWords);
         if (crunchingResult.containsKey(bag)) {
-            crunchingResult.put(bag, crunchingResult.get(bag) + 1);
+            crunchingResult.put(bag, crunchingResult.get(bag) + 1L);
         } else {
             crunchingResult.put(bag, 1L);
         }

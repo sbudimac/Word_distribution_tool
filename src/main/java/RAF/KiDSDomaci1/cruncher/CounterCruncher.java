@@ -21,7 +21,6 @@ public class CounterCruncher extends Task {
 
     private Cruncher cruncher;
     private ObservableList<String> statusList;
-    private CopyOnWriteArrayList<FileInput> inputComponents;
     private CopyOnWriteArrayList<CacheOutput> outputComponents;
     private ExecutorService notifierThreadPool;
     private final Object stopLock;
@@ -29,7 +28,6 @@ public class CounterCruncher extends Task {
     public CounterCruncher(Cruncher cruncher, ObservableList<String> statusList) {
         this.cruncher = cruncher;
         this.statusList = statusList;
-        this.inputComponents = new CopyOnWriteArrayList<>();
         this.outputComponents = new CopyOnWriteArrayList<>();
         this.notifierThreadPool = Executors.newCachedThreadPool();
         this.stopLock = new Object();
@@ -80,16 +78,12 @@ public class CounterCruncher extends Task {
     public void stop() {
         synchronized (stopLock) {
             try {
-                cruncher.getInputContent().put(new FileContent("\\", ""));
+                cruncher.getInputContent().put(new FileContent("\\", "Poison pill :("));
                 stopLock.wait();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
-    }
-
-    public CopyOnWriteArrayList<FileInput> getInputComponents() {
-        return inputComponents;
     }
 
     public CopyOnWriteArrayList<CacheOutput> getOutputComponents() {
