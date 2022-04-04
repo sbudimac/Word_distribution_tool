@@ -270,34 +270,25 @@ public class MainView {
 	}
 
 	private void sumResults() {
-		Stage popup = new Stage();
-		popup.setTitle("Enter sum name");
-		VBox vBox = new VBox();
-		TextField tf = new TextField("sum");
-		HBox buttons = new HBox();
-		Button ok = new Button("OK");
-		ok.setOnAction(event -> commitSumResult(tf, popup));
-		Button cancel = new Button("Cancel");
-		cancel.setOnAction(event -> popup.close());
-		buttons.getChildren().add(ok);
-		buttons.getChildren().add(cancel);
-		vBox.getChildren().add(tf);
-		vBox.getChildren().add(buttons);
-		popup.setScene(new Scene(vBox, 300, 300));
-		popup.show();
+		TextInputDialog dialog = new TextInputDialog("sum");
+		dialog.setTitle("Sum results");
+		dialog.setHeaderText("Enter sum name");
+		Optional<String> result = dialog.showAndWait();
+		result.ifPresent(s -> {
+			commitSumResult(result.get());
+		});
 	}
 
-	private void commitSumResult(TextField tf, Stage popup) {
-		String sumName = tf.getText();
-		if (resultsList.contains(sumName) || resultsList.contains(sumName + "*")) {
+	private void commitSumResult(String result) {
+		if (resultsList.contains(result) || resultsList.contains(result + "*")) {
 			errorPopout("Sum name is reserved");
 			return;
 		}
 		ProgressBar progressBar = new ProgressBar();
-		Label pbLabel = new Label(sumName);
+		Label pbLabel = new Label(result);
 		right.getChildren().add(progressBar);
 		right.getChildren().add(pbLabel);
-		resultsList.add(sumName + "*");
+		resultsList.add(result + "*");
 		List<String> toSum = new ArrayList<>();
 		for (String s : results.getSelectionModel().getSelectedItems()) {
 			for (String resultName : cacheOutput.getOutputResult().keySet()) {
@@ -312,21 +303,16 @@ public class MainView {
 				}
 			}
 		}
-		System.out.println(toSum);
-		SumWorker sumWorker = new SumWorker(this, toSum, cacheOutput, right, progressBar, pbLabel, sumName, resultsList);
-		cacheOutput.sum(sumName, sumWorker);
-		popup.close();
+		SumWorker sumWorker = new SumWorker(this, toSum, cacheOutput, right, progressBar, pbLabel, result, resultsList);
+		cacheOutput.sum(result, sumWorker);
 	}
 
 	private void errorPopout(String message) {
-		Stage stage = new Stage();
-		stage.setTitle(message);
-		VBox vBox = new VBox();
-		Button ok = new Button("OK");
-		ok.setOnAction(event -> stage.close());
-		vBox.getChildren().add(ok);
-		stage.setScene(new Scene(vBox, 300, 300));
-		stage.show();
+		Alert alert = new Alert(AlertType.WARNING);
+		alert.setTitle("Error");
+		alert.setHeaderText(message);
+		alert.setContentText(null);
+		alert.showAndWait();
 	}
 
 	public void addFileInput(FileInput fileInput) {
@@ -418,36 +404,32 @@ public class MainView {
 
 	public void shutDown() {
 		Stage stage = new Stage();
-		stage.setTitle("Shutting down");
+		stage.setTitle("Stopping everything");
 		Thread shutDownThread = new Thread(() -> {
-			for (CruncherView cruncherView : cruncherViews) {
-				cruncherView.getCounterCruncher().stop();
-			}
 			for (FileInputView fileInputView : fileInputViews) {
 				fileInputView.getFileInput().stop();
-				synchronized (fileInputView.getFileInput().getPauseLock()) {
-					fileInputView.getFileInput().getPauseLock().notifyAll();
-				}
 			}
-			MainView.inputThreadPool.shutdown();
 			for (CruncherView cruncherView : cruncherViews) {
+				cruncherView.getCounterCruncher().stop();
 				cruncherView.getCounterCruncher().getNotifierThreadPool().shutdown();
 			}
-			MainView.outputThreadPool.shutdown();
 			cacheOutput.stop();
 			cacheOutput.getSortingPool().shutdown();
-			MainView.cruncherThreadPool.awaitQuiescence(10, TimeUnit.SECONDS);
+			MainView.inputThreadPool.shutdown();
+			MainView.cruncherThreadPool.shutdown();
+			MainView.outputThreadPool.shutdown();
+			MainView.cruncherThreadPool.awaitQuiescence(10, TimeUnit.MINUTES);
 			try {
-				MainView.inputThreadPool.awaitTermination(10, TimeUnit.SECONDS);
-				MainView.outputThreadPool.awaitTermination(10, TimeUnit.SECONDS);
+				MainView.inputThreadPool.awaitTermination(10, TimeUnit.MINUTES);
+				MainView.outputThreadPool.awaitTermination(10, TimeUnit.MINUTES);
 				for (CruncherView cruncherView : cruncherViews) {
-					cruncherView.getCounterCruncher().getNotifierThreadPool().awaitTermination(10, TimeUnit.SECONDS);
+					cruncherView.getCounterCruncher().getNotifierThreadPool().awaitTermination(10, TimeUnit.MINUTES);
 				}
-				cacheOutput.getSortingPool().awaitTermination(10, TimeUnit.SECONDS);
+				cacheOutput.getSortingPool().awaitTermination(10, TimeUnit.MINUTES);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			System.out.println("Shutting down...");
+			System.out.println("Stopping everything...");
 			Platform.runLater(stage::close);
 			System.exit(0);
 		});
