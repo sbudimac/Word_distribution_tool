@@ -6,6 +6,7 @@ import RAF.KiDSDomaci1.model.Disk;
 import RAF.KiDSDomaci1.view.MainView;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -152,6 +153,10 @@ public class FileInput implements Runnable {
 
 	public CopyOnWriteArrayList<String> getDirectoryPaths() {
 		return directoryPaths;
+	}
+
+	public ConcurrentHashMap<String, Long> getLastModifiedMap() {
+		return lastModifiedMap;
 	}
 
 	public CopyOnWriteArrayList<Cruncher> getCrunchers() {

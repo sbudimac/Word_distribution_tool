@@ -6,12 +6,14 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class Cruncher {
 	private int arity;
 	private String name;
+	private static int number = 0;
 
 	private BlockingQueue<FileContent> inputContent;
 	
 	public Cruncher(int arity) {
 		this.arity = arity;
-		this.name = "Counter 0";
+		this.name = "Counter " + number;
+		number++;
 		this.inputContent = new LinkedBlockingQueue<>();
 	}
 	

@@ -12,4 +12,8 @@ public class Directory {
 	public String toString() {
 		return directory.getPath();
 	}
+
+	public File getDirectory() {
+		return directory;
+	}
 }

@@ -2,6 +2,7 @@ package RAF.KiDSDomaci1.view;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Objects;
 
 import RAF.KiDSDomaci1.model.Cruncher;
 import RAF.KiDSDomaci1.model.Directory;
@@ -208,6 +209,17 @@ public class FileInputView {
 	private void removeDirectory(Directory directory) {
 		directories.getItems().remove(directory);
 		fileInput.getDirectoryPaths().remove(directory.toString());
+		clearLastModifiedData(directory.getDirectory());
+	}
+
+	private void clearLastModifiedData(File directory) {
+		for (File file : Objects.requireNonNull(directory.listFiles())) {
+			if (file.isDirectory()) {
+				clearLastModifiedData(file);
+			} else {
+				fileInput.getLastModifiedMap().remove(file.getAbsolutePath());
+			}
+		}
 	}
 
 	private void start() {
