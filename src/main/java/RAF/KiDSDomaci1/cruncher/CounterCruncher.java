@@ -18,14 +18,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 public class CounterCruncher extends Task {
-
+    private MainView mainView;
     private Cruncher cruncher;
     private ObservableList<String> statusList;
     private CopyOnWriteArrayList<CacheOutput> outputComponents;
     private ExecutorService notifierThreadPool;
     private final Object stopLock;
 
-    public CounterCruncher(Cruncher cruncher, ObservableList<String> statusList) {
+    public CounterCruncher(MainView mainView, Cruncher cruncher, ObservableList<String> statusList) {
+        this.mainView = mainView;
         this.cruncher = cruncher;
         this.statusList = statusList;
         this.outputComponents = new CopyOnWriteArrayList<>();
@@ -44,7 +45,7 @@ public class CounterCruncher extends Task {
                 String contentName = SlashConverter.currentFileName(contentToCrunch.getName());
                 Platform.runLater(() -> statusList.add(contentName));
                 Future<Map<String, Long>> crunchingResult = MainView.cruncherThreadPool.submit(
-                        new CruncherWorker(contentToCrunch.getContent(), cruncher.getArity(), 0, contentToCrunch.getContent().length(), false)
+                        new CruncherWorker(mainView, contentToCrunch.getContent(), cruncher.getArity(), 0, contentToCrunch.getContent().length(), false)
                 );
                 System.out.println("Crunching...");
                 for (CacheOutput outputComponent : outputComponents) {

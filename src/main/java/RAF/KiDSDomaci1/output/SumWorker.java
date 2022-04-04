@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 public class SumWorker implements Callable<Map<String, Long>> {
+    private MainView mainView;
     private List<String> toSum;
     private CacheOutput cacheOutput;
     private Pane right;
@@ -23,7 +24,8 @@ public class SumWorker implements Callable<Map<String, Long>> {
     private ObservableList<String> resultsList;
     private static int progress;
 
-    public SumWorker(List<String> toSum, CacheOutput cacheOutput, Pane right, ProgressBar progressBar, Label pbLabel, String sumName, ObservableList<String> resultsList) {
+    public SumWorker(MainView mainView, List<String> toSum, CacheOutput cacheOutput, Pane right, ProgressBar progressBar, Label pbLabel, String sumName, ObservableList<String> resultsList) {
+        this.mainView = mainView;
         this.toSum = toSum;
         this.cacheOutput = cacheOutput;
         this.right = right;
@@ -58,7 +60,7 @@ public class SumWorker implements Callable<Map<String, Long>> {
             });
             return sumResult;
         } catch (OutOfMemoryError e) {
-            MainView.getInstance().stopApp();
+            mainView.stopApp();
         }
         return null;
     }

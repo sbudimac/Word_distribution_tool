@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 
 import RAF.KiDSDomaci1.app.Config;
 import RAF.KiDSDomaci1.model.Cruncher;
@@ -31,11 +32,10 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 public class MainView {
-	private static MainView instance = null;
-
 	private Stage stage;
 	private ComboBox<Disk> disks;
 	private HBox left;
@@ -58,6 +58,7 @@ public class MainView {
 
 	public void initMainView(BorderPane borderPane, Stage stage) {
 		this.stage = stage;
+		stage.setOnCloseRequest((event) -> shutDown());
 
 		fileInputViews = new ArrayList<>();
 		cruncherViews = new ArrayList<>();
@@ -89,7 +90,7 @@ public class MainView {
 		fileInput.getChildren().add(disks);
 
 		addFileInput = new Button("Add FileInput");
-		addFileInput.setOnAction(e -> addFileInput(new FileInput(disks.getSelectionModel().getSelectedItem())));
+		addFileInput.setOnAction(e -> addFileInput(new FileInput(this, disks.getSelectionModel().getSelectedItem())));
 		VBox.setMargin(addFileInput, new Insets(5, 0, 10, 0));
 		addFileInput.setMinWidth(120);
 		addFileInput.setMaxWidth(120);
@@ -145,6 +146,7 @@ public class MainView {
 		cruncherThreadPool = ForkJoinPool.commonPool();
 
 		cruncher = new VBox();
+		cruncherViews = new ArrayList<>();
 
 		Text text = new Text("Crunchers:");
 		cruncher.getChildren().add(text);
@@ -311,7 +313,7 @@ public class MainView {
 			}
 		}
 		System.out.println(toSum);
-		SumWorker sumWorker = new SumWorker(toSum, cacheOutput, right, progressBar, pbLabel, sumName, resultsList);
+		SumWorker sumWorker = new SumWorker(this, toSum, cacheOutput, right, progressBar, pbLabel, sumName, resultsList);
 		cacheOutput.sum(sumName, sumWorker);
 		popup.close();
 	}
@@ -414,6 +416,48 @@ public class MainView {
 		});
 	}
 
+	public void shutDown() {
+		Stage stage = new Stage();
+		stage.setTitle("Shutting down");
+		Thread shutDownThread = new Thread(() -> {
+			for (CruncherView cruncherView : cruncherViews) {
+				cruncherView.getCounterCruncher().stop();
+			}
+			for (FileInputView fileInputView : fileInputViews) {
+				fileInputView.getFileInput().stop();
+				synchronized (fileInputView.getFileInput().getPauseLock()) {
+					fileInputView.getFileInput().getPauseLock().notifyAll();
+				}
+			}
+			MainView.inputThreadPool.shutdown();
+			for (CruncherView cruncherView : cruncherViews) {
+				cruncherView.getCounterCruncher().getNotifierThreadPool().shutdown();
+			}
+			MainView.outputThreadPool.shutdown();
+			cacheOutput.stop();
+			cacheOutput.getSortingPool().shutdown();
+			MainView.cruncherThreadPool.awaitQuiescence(10, TimeUnit.SECONDS);
+			try {
+				MainView.inputThreadPool.awaitTermination(10, TimeUnit.SECONDS);
+				MainView.outputThreadPool.awaitTermination(10, TimeUnit.SECONDS);
+				for (CruncherView cruncherView : cruncherViews) {
+					cruncherView.getCounterCruncher().getNotifierThreadPool().awaitTermination(10, TimeUnit.SECONDS);
+				}
+				cacheOutput.getSortingPool().awaitTermination(10, TimeUnit.SECONDS);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			System.out.println("Shutting down...");
+			Platform.runLater(stage::close);
+			System.exit(0);
+		});
+		VBox vBox = new VBox();
+		stage.setScene(new Scene(vBox, 300, 300));
+		shutDownThread.start();
+		stage.initModality(Modality.APPLICATION_MODAL);
+		stage.showAndWait();
+	}
+
 	public void removeCruncher(CruncherView cruncherView) {
 		for (FileInputView fileInputView : fileInputViews) {
 			fileInputView.removeLinkedCruncher(cruncherView.getCruncher());
@@ -423,18 +467,15 @@ public class MainView {
 		cruncher.getChildren().remove(cruncherView.getCruncherView());
 	}
 
-	public Pane getRight() {
-		return right;
+	public ArrayList<FileInputView> getFileInputViews() {
+		return fileInputViews;
 	}
 
-	public ObservableList<String> getResultsList() {
-		return resultsList;
+	public ArrayList<CruncherView> getCruncherViews() {
+		return cruncherViews;
 	}
 
-	public static MainView getInstance() {
-		if (instance == null) {
-			instance = new MainView();
-		}
-		return instance;
+	public CacheOutput getCacheOutput() {
+		return cacheOutput;
 	}
 }

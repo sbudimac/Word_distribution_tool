@@ -7,6 +7,7 @@ import java.util.*;
 import java.util.concurrent.RecursiveTask;
 
 public class CruncherWorker extends RecursiveTask<Map<String, Long>> {
+    private MainView mainView;
     private int counterDataLimit;
     private String content;
     private int arity;
@@ -14,8 +15,9 @@ public class CruncherWorker extends RecursiveTask<Map<String, Long>> {
     private int length;
     private boolean subJob;
 
-    public CruncherWorker(String content, int arity, int start, int length, boolean subJob) {
+    public CruncherWorker(MainView mainView, String content, int arity, int start, int length, boolean subJob) {
         this.counterDataLimit = Integer.parseInt(Config.getProperty("counter_data_limit"));
+        this.mainView = mainView;
         this.content = content;
         this.arity = arity;
         this.start = start;
@@ -76,13 +78,13 @@ public class CruncherWorker extends RecursiveTask<Map<String, Long>> {
                     if (c != ' ' && c != '\t' && c != '\n') {
                         L++;
                     }
-                    subWorkers.add(new CruncherWorker(content, arity, previousScopeIndex, L, true));
+                    subWorkers.add(new CruncherWorker(mainView, content, arity, previousScopeIndex, L, true));
                     previousScopeIndex = L + 1;
                 }
                 for (CruncherWorker subWorker : subWorkers) {
                     subWorker.fork();
                 }
-                CruncherWorker lastWorker = new CruncherWorker(content, arity, previousScopeIndex, length, true);
+                CruncherWorker lastWorker = new CruncherWorker(mainView, content, arity, previousScopeIndex, length, true);
                 Map<String, Long> lastResult = lastWorker.compute();
                 List<Map<String, Long>> subWorkerResults = new ArrayList<>();
                 for (CruncherWorker subWorker : subWorkers) {
@@ -97,7 +99,7 @@ public class CruncherWorker extends RecursiveTask<Map<String, Long>> {
             }
             return crunchingResult;
         } catch (OutOfMemoryError e) {
-            MainView.getInstance().stopApp();
+            mainView.stopApp();
         }
         return null;
     }

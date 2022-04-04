@@ -25,7 +25,7 @@ public class CruncherView {
 		this.mainView = mainView;
 		this.cruncher = cruncher;
 		this.statusList = FXCollections.observableArrayList();
-		this.counterCruncher = new CounterCruncher(cruncher, statusList);
+		this.counterCruncher = new CounterCruncher(mainView, cruncher, statusList);
 		counterCruncher.getOutputComponents().add(cacheOutput);
 		Thread cruncherThread = new Thread(counterCruncher);
 		cruncherThread.start();

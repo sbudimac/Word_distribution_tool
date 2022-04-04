@@ -8,9 +8,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Callable;
 
 public class InputReader implements Callable<String> {
+    private MainView mainView;
     private String path;
 
-    public InputReader(String path) {
+    public InputReader(MainView mainView, String path) {
+        this.mainView = mainView;
         this.path = path;
     }
 
@@ -25,7 +27,7 @@ public class InputReader implements Callable<String> {
             String fileContent = new String(content, StandardCharsets.US_ASCII);
             return fileContent;
         } catch (OutOfMemoryError e) {
-            MainView.getInstance().stopApp();
+            mainView.stopApp();
         }
         return null;
     }

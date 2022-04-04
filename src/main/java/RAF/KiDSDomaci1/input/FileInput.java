@@ -3,6 +3,7 @@ package RAF.KiDSDomaci1.input;
 import RAF.KiDSDomaci1.app.Config;
 import RAF.KiDSDomaci1.model.Cruncher;
 import RAF.KiDSDomaci1.model.Disk;
+import RAF.KiDSDomaci1.view.MainView;
 
 import java.io.File;
 import java.util.Objects;
@@ -13,6 +14,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class FileInput implements Runnable {
+	private MainView mainView;
+
 	private Disk disk;
 	private String name;
 
@@ -33,7 +36,8 @@ public class FileInput implements Runnable {
 	private volatile boolean working;
 	private final int sleepTime;
 
-	public FileInput(Disk disk) {
+	public FileInput(MainView mainView, Disk disk) {
+		this.mainView = mainView;
 		this.name = "0";
 		this.disk = disk;
 		this.files = new LinkedBlockingQueue<>();
@@ -44,7 +48,7 @@ public class FileInput implements Runnable {
 		this.stopped = new AtomicBoolean(false);
 		this.pauseLock = new Object();
 		this.stopLock = new Object();
-		this.scheduler = new Scheduler(this.files, this.crunchers, this.stopped, this.stopLock);
+		this.scheduler = new Scheduler(mainView, files, crunchers, stopped, stopLock);
 		this.working = true;
 		this.sleepTime = Integer.parseInt(Config.getProperty("file_input_sleep_time"));
 	}

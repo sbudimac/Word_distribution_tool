@@ -13,13 +13,15 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Scheduler extends Task<String> {
+    private MainView mainView;
     private BlockingQueue<String> files;
     private CopyOnWriteArrayList<Cruncher> crunchers;
     private AtomicBoolean stopped;
     private final Object stopLock;
     private String currentFile;
 
-    public Scheduler(BlockingQueue<String> files, CopyOnWriteArrayList<Cruncher> crunchers, AtomicBoolean stopped, Object stopLock) {
+    public Scheduler(MainView mainView, BlockingQueue<String> files, CopyOnWriteArrayList<Cruncher> crunchers, AtomicBoolean stopped, Object stopLock) {
+        this.mainView = mainView;
         this.files = files;
         this.crunchers = crunchers;
         this.stopped = stopped;
@@ -37,7 +39,7 @@ public class Scheduler extends Task<String> {
                     break;
                 }
                 updateMessage(SlashConverter.currentFileName(currentFile));
-                Future<String> fileToRead = MainView.inputThreadPool.submit(new InputReader(currentFile));
+                Future<String> fileToRead = MainView.inputThreadPool.submit(new InputReader(mainView, currentFile));
                 if (fileToRead.get() == null) {
                     updateMessage("Idle");
                     break;
